@@ -1,3 +1,4 @@
+import csv
 import requests
 from bs4 import BeautifulSoup
 
@@ -7,6 +8,7 @@ HEADERS = {
   'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:91.0) Gecko/20100101 Firefox/91.0',
   'accept': '*/*'
 }
+FILE = 'data.csv'
 
 def get_html(url, params=None):
   return requests.get(url, headers=HEADERS, params=params)
@@ -22,7 +24,7 @@ def get_pages_count(html):
 
 def get_content(html):
   soup = BeautifulSoup(html, 'html.parser')
-  items = soup.find_all('section', class_='proposition')
+  items = soup.find_all('section', class_='proposition', id=None)
 
   content = []
   for item in items:
@@ -33,15 +35,30 @@ def get_content(html):
     price_uah = price.find('span', class_='size16') if price else False
     region = item.find('span', class_='region') if price else False
 
-    content.append({
-      'title': title.get_text(strip=True),
-      'link': HOST + link.get('href') if link else '',
-      'price usd': price_usd.get_text(strip=True) if price_usd else '',
-      'price uah': price_uah.get_text(strip=True) if price_uah else '',
-      'region': region.get_text(strip=True) if region else '',
-    })
+    if region:
+      content.append({
+        'title': title.get_text(strip=True),
+        'link': HOST + link.get('href') if link else '',
+        'price usd': price_usd.get_text(strip=True) if price_usd else '',
+        'price uah': price_uah.get_text(strip=True) if price_uah else '',
+        'region': region.get_text(strip=True),
+      })
 
   return content
+
+def save_file(items, path):
+  with open(path, 'w', newline='') as file:
+    writer = csv.writer(file, delimiter=';')
+    writer.writerow(['Model', 'Link', 'USD', 'UAH', 'Region'])
+
+    for item in items:
+      writer.writerow([
+        item['title'],
+        item['link'],
+        item['price usd'],
+        item['price uah'],
+        item['region'],
+      ])
 
 def parse():
   html = get_html(URL)
@@ -59,6 +76,7 @@ def parse():
       content = get_content(html.text)
       rows.extend(content)
 
+    save_file(rows, FILE)
     print(f'Got {len(rows)} data rows')
 
   else:
