@@ -2,8 +2,8 @@ import csv
 import requests
 from bs4 import BeautifulSoup
 
-# HOST = 'https://bitskins.com'
-URL = 'https://bitskins.com'
+HOST = 'https://auto.ria.com'
+URL = 'https://auto.ria.com/newauto/marka-jeep/'
 HEADERS = {
   'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:91.0) Gecko/20100101 Firefox/91.0',
   'accept': '*/*'
@@ -24,25 +24,25 @@ def get_pages_count(html):
 
 def get_content(html):
   soup = BeautifulSoup(html, 'html.parser')
-  items = soup.find_all('div', class_='item-featured')
+  items = soup.find_all('section', class_='proposition')
 
   content = []
   for item in items:
-    title = item.find('div', class_='item-title')
-    price = item.find('span', class_='item-price-display')
-    wear = item.find('span', class_='unwrappable-float-pointer')
-    flot = wear.get_text(strip=True).split(',')[0] if wear else 'Nope'
-    # link = item.find('span', class_='unwrappable-float-pointer')
+    title = item.find('h3', class_='proposition_name')
+    link = item.find('a', class_='proposition_link')
+    price = item.find('div', class_='proposition_price')
+    price_usd = price.find('span', class_='size22') if price else False
+    price_uah = price.find('span', class_='size16') if price else False
+    region = item.find('span', class_='region') if price else False
 
-    contentItem = {
-      'title': title.get_text(strip=True),
-      'price': price.get_text(strip=True),
-      'flot': flot,
-    }
-
-    print(contentItem)
-
-    content.append(contentItem)
+    if region:
+      content.append({
+        'title': title.get_text(strip=True),
+        'link': HOST + link.get('href') if link else '',
+        'price usd': price_usd.get_text(strip=True) if price_usd else '',
+        'price uah': price_uah.get_text(strip=True) if price_uah else '',
+        'region': region.get_text(strip=True),
+      })
 
   return content
 
@@ -70,14 +70,13 @@ def parse():
       print(f'Parsing page {page} from {pages_count}...')
 
       params = {
-        'appid': 730,
-        'page': page,
+        page: page
       }
       html = get_html(URL, params=params)
       content = get_content(html.text)
       rows.extend(content)
 
-    # save_file(rows, FILE)
+    save_file(rows, FILE)
     print(f'Got {len(rows)} data rows')
 
   else:
