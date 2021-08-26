@@ -1,8 +1,9 @@
+from os import replace
 import requests
 from bs4 import BeautifulSoup
 from json2html import *
 
-URL = 'https://bitskins.com'
+URL = 'https://bitskins.com/'
 HEADERS = {
   'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:91.0) Gecko/20100101 Firefox/91.0',
   'accept': '*/*'
@@ -22,35 +23,50 @@ def get_content(html):
     price = item.find('span', class_='item-price-display')
     wear = item.find('span', class_='unwrappable-float-pointer')
     floAt = wear.get_text(strip=True).split(',')[0] if wear else 'Nope'
-    # link = item.find('span', class_='unwrappable-float-pointer')
+
+    lazy = item.find('div', class_='lazy')
+    paragraph = lazy.find_all('p', class_='text-center')[-1]
+    link = paragraph.find_all('a', class_='btn-default', href=True)[-1]
+
+    anchor = '<a href="%(href)s" target="_blank">%(name)s</a>' % {
+      'href': URL + link['href'],
+      'name': title.get_text(strip=True),
+    }
 
     if floAt.startswith('0.00'):
       contentItem = {
-        'title': title.get_text(strip=True),
+        'name': anchor,
         'price': price.get_text(strip=True),
         'float': floAt,
       }
-
-      print(contentItem)
 
       content.append(contentItem)
 
   return content
 
 def save_file(items, path):
-  table = json2html.convert(json=items)
+  html = json2html.convert(json=items)
+  chars = [
+    ['&lt;', '<'],
+    ['&gt;', '>'],
+    ['&quot;', '"'],
+    ['&amp;', '&'],
+  ]
 
-  with open(FILE, 'w', encoding='utf-8') as file:
-    file.write('%s\n' % table)
+  for char in chars:
+    html = html.replace(char[0], char[1])
+
+  with open(path, 'w', encoding='utf-8') as file:
+    file.write('%s\n' % html)
     file.close()
 
-  print(f'File {FILE} has been created')
+  print(f'File {path} has been created')
 
 def parse():
   html = get_html(URL)
   if html.status_code == 200:
     rows = []
-    PAGES_COUNT = 2
+    PAGES_COUNT = 20
 
     for page in range(1, PAGES_COUNT + 1):
       print(f'Parsing page {page} from {PAGES_COUNT}...')
