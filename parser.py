@@ -13,7 +13,9 @@ FILE = 'dump/data.html'
 def get_html(url, params=None):
   return requests.get(url, headers=HEADERS, params=params)
 
+itemIndex = 0
 def get_content(html):
+  global itemIndex
   soup = BeautifulSoup(html, 'html.parser')
   items = soup.find_all('div', class_='item-featured')
 
@@ -34,7 +36,9 @@ def get_content(html):
     }
 
     if floAt.startswith('0.00'):
+      itemIndex += 1
       contentItem = {
+        'index': itemIndex,
         'name': anchor,
         'price': price.get_text(strip=True),
         'float': floAt,
@@ -66,7 +70,7 @@ def parse():
   html = get_html(URL)
   if html.status_code == 200:
     rows = []
-    PAGES_COUNT = 20
+    PAGES_COUNT = 50
 
     for page in range(1, PAGES_COUNT + 1):
       print(f'Parsing page {page} from {PAGES_COUNT}...')
