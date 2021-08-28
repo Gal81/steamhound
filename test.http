@@ -1,0 +1,23 @@
+@host = https://api.csgofloat.com
+@userAgent = Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:91.0) Gecko/20100101 Firefox/91.0
+
+@url1 = steam://rungame/730/76561202255233023/+csgo_econ_action_preview%20M3387257806257071617A23213490325D1030284652543335744
+
+###
+
+GET {{host}}/
+  ?url={{url1}}
+User-Agent: {{userAgent}}
+Content-Type: application/json
+
+###
+
+POST {{host}}/bulk
+User-Agent: {{userAgent}}
+Content-Type: application/json
+
+{
+  "links": [
+    { "link": "{{url1}}" }
+  ]
+}

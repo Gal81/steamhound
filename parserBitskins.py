@@ -8,7 +8,7 @@ HEADERS = {
   'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:91.0) Gecko/20100101 Firefox/91.0',
   'accept': '*/*'
 }
-FILE = 'dump/data.html'
+FILE = 'dump/bitskins.html'
 
 def get_html(url, params=None):
   return requests.get(url, headers=HEADERS, params=params)
