@@ -12,7 +12,6 @@ HEADERS = {
 
 STEAM_HOST = 'https://steamcommunity.com'
 STEAM_URL = '/market/search'
-STEAM_FILE = 'dump/steam.html'
 STEAM_PARAMS = {
   'q': '',
   'descriptions': 1,
@@ -24,6 +23,7 @@ STEAM_PARAMS = {
   'category_730_Exterior[]': 'tag_WearCategory0',
   'appid': 730,
 }
+STEAM_FILE = 'dump/steam.html'
 
 def get_listing_page_html(page):
   url = STEAM_HOST + STEAM_URL + page
@@ -57,10 +57,7 @@ def get_listing_rows():
   for page in range(1, PAGES_COUNT + 1):
     print(f'Parsing page {page} from {PAGES_COUNT}...')
 
-    page = '#p%(page)s_price_asc' % {
-      'page': page,
-    }
-    html = get_listing_page_html(page)
+    html = get_listing_page_html(f'#p{page}_price_asc')
     # print(html.url)
 
     if html.status_code == 200:
@@ -88,9 +85,7 @@ def get_script_data():
 SCRIPT_DATA = get_script_data()
 
 def get_item_by_head(head):
-  regexp = 'M%(M)sA%%assetid%%D\d{19}' % {
-    'M': head,
-  }
+  regexp = 'M{head}A%%assetid%%D\d{19}'
   # print(regexp)
 
   id = re.search(r'' + regexp, SCRIPT_DATA)
@@ -98,9 +93,7 @@ def get_item_by_head(head):
   if id:
     print(id.group())
   else:
-    print('ID with head %(head)s no matched' % {
-      'head': head,
-    })
+    print(f'ID with head {head} no matched')
 
 def get_skin_variants_html(url):
   return requests.get(url, headers=HEADERS)
@@ -131,13 +124,10 @@ def parse_skins():
         # params = params.replace(', \'', '+')
         params = params.split(', \'')
 
-        get_item_by_head(params[0])
+        get_item_by_head(params[0]) #FIXME: add var
 
-        id = 'M%(M)sA%(A)sD%(D)s' % {
-          'M': params[0],
-          'A': params[1],
-          'D': '===',
-        }
+        d = '==='
+        id = f'M{params[0]}A{params[1]}D{d}'
 
         skin['ids'].append(id)
 

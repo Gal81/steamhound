@@ -1,1 +1,9 @@
+build
+dist
 dump
+
+parserStage2.spec
+
+steam/__pycache__
+
+data.html
