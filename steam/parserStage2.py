@@ -1,3 +1,4 @@
+import os
 import re
 import json
 import time
@@ -38,10 +39,10 @@ def file_write(data):
     html = html.replace(char[0], char[1])
 
   try:
-    with open(STEAM_FILE, 'w', encoding='utf-8') as file:
+    with open(STEAM_FILE, 'a', encoding='utf-8') as file:
       file.write('%s\n' % html)
       file.close()
-      print_message(f'{Fore.CYAN} File {STEAM_FILE} has been created')
+      print_message(f'{Fore.CYAN} File {STEAM_FILE} has been updated')
   except Exception as error:
     print_message(f'{Back.RED} {error}')
     input()
@@ -176,20 +177,21 @@ def parse_main_list_item(list):
   return skins
 
 def main():
-  items = []
+  if os.path.exists(STEAM_FILE):
+    os.remove(STEAM_FILE)
+
   pages = 20
 
   for page in range(1, pages + 1):
     print_message(f'>>>{Fore.GREEN} Parsing page {page} from {pages}...')
 
-    list_main = parse_main_list(page)
-    list_item = parse_main_list_item(list_main)
+    list = parse_main_list(page)
+    skins = parse_main_list_item(list)
 
-    if list_item:
-      items.append(list_item)
+    if skins:
+      file_write(skins)
 
-  file_write(items)
-  print_message(f'{Fore.BLUE} Press Enter to close...')
+  print_message(f'{Fore.BLUE} Work is done. Press Enter to close...')
   input()
 
 main()
