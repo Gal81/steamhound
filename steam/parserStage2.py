@@ -38,9 +38,9 @@ def file_write(data):
     with open(STEAM_FILE, 'a', encoding='utf-8') as file:
       file.write('%s\n' % html)
       file.close()
-      print(f'{Fore.CYAN} File {STEAM_FILE} has been updated')
+      print(f' {Fore.CYAN}█─ File {STEAM_FILE} has been updated')
   except Exception as error:
-    print(f'{Back.RED} {error}')
+    print(f' {Back.RED}{error}')
     input()
 
 def get_main_params(page):
@@ -88,7 +88,7 @@ def parse_main_list(page):
     # print(json.dumps(list, indent=2))
     return list
   else:
-    print(f'{Fore.RED} Error: {html.status_code}')
+    print(f' {Fore.RED}█─ Error: {html.status_code}')
 
 def get_tail_by_head(head, data):
   regexp = f'M{head}A%assetid%D(\d{{19}})'
@@ -98,7 +98,7 @@ def get_tail_by_head(head, data):
     id = id.group()
     return id.split('D')[1]
   else:
-    print(f'{Fore.WHITE} ID with head {head} no matched')
+    print(f' {Fore.CYAN}├─ {Fore.WHITE}ID with head {head} no matched')
     return False
 
 def get_float(id):
@@ -113,7 +113,7 @@ def get_float(id):
     return data['iteminfo']['floatvalue']
 
   else:
-    print(f'{Fore.RED} Error: {response.status_code}')
+    print(f' {Fore.RED}█─ Error: {response.status_code}')
     return False
 
 def parse_main_list_item(list):
@@ -141,7 +141,8 @@ def parse_main_list_item(list):
 
       items = result.find_all('div', class_='market_listing_row')
 
-      for item in items:
+      print(f' {Fore.CYAN}█─ {Fore.WHITE}Parsing: {Fore.YELLOW}{name}')
+      for index, item in enumerate(items):
         link = item.find('a', class_='item_market_action_button', href=True)
 
         if link:
@@ -164,9 +165,12 @@ def parse_main_list_item(list):
               price = item.find('span', class_='market_listing_price_with_fee')
               skin['prices'].append(price.get_text())
 
+              info = f'float: {Fore.MAGENTA}{float_value}{Fore.WHITE}; has been added'
+              print(f' {Fore.CYAN}├─ {Fore.WHITE}Skin: {Fore.CYAN}{index + 1} {Fore.WHITE}/ 10; {info}')
+
       if len(skin['floats']) != 0:
         skins.append(skin)
-        print(f' Parsed: {Fore.YELLOW}{name} ')
+        print(f' {Fore.CYAN}├─ {Fore.WHITE}Added: {name}')
 
   return skins
 
@@ -177,7 +181,7 @@ def main():
   pages = 20
 
   for page in range(1, pages + 1):
-    print(f'>>>{Fore.GREEN} Parsing page {page} from {pages}...')
+    print(f' {Fore.GREEN}█─ Parsing page {page} from {pages}…')
 
     list = parse_main_list(page)
     skins = parse_main_list_item(list)
@@ -185,7 +189,7 @@ def main():
     if skins:
       file_write(skins)
 
-  print(f'{Fore.BLUE} Work is done. Press Enter to close...')
+  print(f' {Fore.YELLOW}▀─ {Fore.BLUE}Work is done. Press Enter to close…')
   input()
 
 main()
