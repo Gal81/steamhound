@@ -163,14 +163,16 @@ def parse_main_list_item(list):
               skin['floats'].append(float_value)
 
               price = item.find('span', class_='market_listing_price_with_fee')
-              skin['prices'].append(price.get_text())
+              price_value = price.get_text(strip=True)
+              skin['prices'].append(price_value)
 
-              info = f'float: {Fore.MAGENTA}{float_value}{Fore.WHITE}; has been added'
-              print(f' {Fore.CYAN}├─ {Fore.WHITE}Skin: {Fore.CYAN}{index + 1} {Fore.WHITE}/ 10; {info}')
+              info_float = f'float: {Fore.MAGENTA}{float_value}{Fore.WHITE}'
+              info_price = f'price: {Fore.MAGENTA}{price_value}'
+              print(f' {Fore.CYAN}├─ {Fore.WHITE}Skin: {Fore.CYAN}{index + 1} {Fore.WHITE}/ 10; {info_float}; {info_price}')
 
       if len(skin['floats']) != 0:
         skins.append(skin)
-        print(f' {Fore.CYAN}├─ {Fore.WHITE}Added: {name}')
+        print(f' {Fore.CYAN}█■ Ready!')
 
   return skins
 
@@ -189,7 +191,7 @@ def main():
     if skins:
       file_write(skins)
 
-  print(f' {Fore.YELLOW}▀─ {Fore.BLUE}Work is done. Press Enter to close…')
+  print(f' {Fore.YELLOW}└─░▒▓█{Back.YELLOW}{Fore.BLACK}Work is done. Press Enter to close…{Back.BLACK}{Fore.YELLOW}█▓▒░')
   input()
 
 main()
