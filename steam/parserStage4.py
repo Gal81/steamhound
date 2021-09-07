@@ -38,9 +38,9 @@ def file_write(data):
     with open(STEAM_FILE, 'a', encoding='utf-8') as file:
       file.write('%s\n' % html)
       file.close()
-      print(f' {Fore.CYAN}█─ File {STEAM_FILE} has been updated')
+      print(f'{Fore.CYAN}█─ File {STEAM_FILE} has been updated')
   except Exception as error:
-    print(f' {Back.RED}{error}')
+    print(f'{Back.RED}{error}')
     input()
 
 def get_main_params(page):
@@ -88,7 +88,7 @@ def parse_main_list(page):
     # print(json.dumps(list, indent=2))
     return list
   else:
-    print(f' {Fore.RED}█─ Error: {html.status_code}')
+    print(f'{Back.RED}   {Fore.WHITE}Error: {html.status_code}{Back.BLACK}{Fore.RED}█▓▒░')
 
 def get_tail_by_head(head, data):
   regexp = f'M{head}A%assetid%D(\d{{19}})'
@@ -98,7 +98,7 @@ def get_tail_by_head(head, data):
     id = id.group()
     return id.split('D')[1]
   else:
-    print(f' {Fore.CYAN}├─ {Fore.WHITE}ID with head {head} no matched')
+    print(f'{Fore.CYAN}├─ {Fore.WHITE}ID with head {head} no matched')
     return False
 
 def get_float(id):
@@ -113,8 +113,21 @@ def get_float(id):
     return data['iteminfo']['floatvalue']
 
   else:
-    print(f' {Fore.RED}█─ Error: {response.status_code}')
+    print(f'{Back.RED}   {Fore.WHITE}Error: {response.status_code}{Back.BLACK}{Fore.RED}█▓▒░')
+
+    if response.status_code == 429:
+      print(f'{Back.RED}   {Fore.WHITE}Sleep {TIMEOUT * 5}sec…{Back.BLACK}{Fore.RED}█▓▒░')
+      time.sleep(TIMEOUT * 5)
+
     return False
+
+def print_skin_status(index, value, added):
+  float_value = f'{Fore.GREEN}{value}' if added else f'{Fore.WHITE}{value}'
+
+  info_main = f'{Fore.CYAN}├─ {Fore.WHITE}Skin: {Fore.CYAN}{index + 1} {Fore.WHITE}/ 10'
+  info_float = f'float: {float_value}{Fore.WHITE}'
+  info_status = f'{Fore.GREEN}Added!' if added else f'{Fore.RED}Skipped'
+  print(f'{info_main}; {info_float}; {info_status}')
 
 def parse_main_list_item(list):
   skins = []
@@ -141,7 +154,7 @@ def parse_main_list_item(list):
 
       items = result.find_all('div', class_='market_listing_row')
 
-      print(f' {Fore.CYAN}█─ {Fore.WHITE}Parsing: {Fore.YELLOW}{name}')
+      print(f'{Back.BLUE}   {Fore.WHITE}Parsing: {Fore.YELLOW}{name}{Back.BLACK}{Fore.BLUE}█▓▒░')
       for index, item in enumerate(items):
         link = item.find('a', class_='item_market_action_button', href=True)
 
@@ -159,20 +172,19 @@ def parse_main_list_item(list):
             id = f'M{params[0]}A{params[1]}D{tail}'
             float_value = get_float(id)
 
-            if float_value and float_value <= 0.07:
+            price = item.find('span', class_='market_listing_price_with_fee')
+
+            if float_value and float_value < 0.01:
               skin['floats'].append(float_value)
+              skin['prices'].append(price.get_text(strip=True))
 
-              price = item.find('span', class_='market_listing_price_with_fee')
-              price_value = price.get_text(strip=True)
-              skin['prices'].append(price_value)
-
-              info_float = f'float: {Fore.MAGENTA}{float_value}{Fore.WHITE}'
-              info_price = f'price: {Fore.MAGENTA}{price_value}'
-              print(f' {Fore.CYAN}├─ {Fore.WHITE}Skin: {Fore.CYAN}{index + 1} {Fore.WHITE}/ 10; {info_float}; {info_price}')
+              print_skin_status(index, float_value, True)
+            elif float_value:
+              print_skin_status(index, float_value, False)
 
       if len(skin['floats']) != 0:
         skins.append(skin)
-        print(f' {Fore.CYAN}█■ Ready!')
+        file_write(skins)
 
   return skins
 
@@ -180,18 +192,15 @@ def main():
   if os.path.exists(STEAM_FILE):
     os.remove(STEAM_FILE)
 
-  pages = 20
+  pages = 100
 
   for page in range(1, pages + 1):
-    print(f' {Fore.GREEN}█─ Parsing page {page} from {pages}…')
+    print(f'{Back.GREEN}   {Fore.BLACK}Parsing page {page} from {pages}{Back.BLACK}{Fore.GREEN}█▓▒░')
 
     list = parse_main_list(page)
     skins = parse_main_list_item(list)
 
-    if skins:
-      file_write(skins)
-
-  print(f' {Fore.YELLOW}└─░▒▓█{Back.YELLOW}{Fore.BLACK}Work is done. Press Enter to close…{Back.BLACK}{Fore.YELLOW}█▓▒░')
+  print(f'{Fore.YELLOW}└─░▒▓█{Back.YELLOW}{Fore.BLACK}Work is done. Press Enter to close…{Back.BLACK}{Fore.YELLOW}█▓▒░')
   input()
 
 main()
