@@ -5,11 +5,10 @@ import time
 import requests
 from bs4 import BeautifulSoup
 from json2html import *
-from colorama import init, Fore, Back, Style
+from colorama import init, Fore, Back
+init(autoreset=True)
 
-init()
-
-TIMEOUT = 2.00
+TIMEOUT = 1.50
 
 HEADERS = {
   'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:91.0) Gecko/20100101 Firefox/91.0',
@@ -22,9 +21,6 @@ STEAM_FILE = 'data.html'
 
 CSGO_HOST = 'https://api.csgofloat.com'
 CSGO_ITEM_HEAD = 'steam://rungame/730/76561202255233023/+csgo_econ_action_preview%20'
-
-def print_message(message):
-  print(f'{Style.RESET_ALL}{message}')
 
 def file_write(data):
   html = json2html.convert(json=data)
@@ -42,9 +38,9 @@ def file_write(data):
     with open(STEAM_FILE, 'a', encoding='utf-8') as file:
       file.write('%s\n' % html)
       file.close()
-      print_message(f'{Fore.CYAN} File {STEAM_FILE} has been updated')
+      print(f'{Fore.CYAN}█─ File {STEAM_FILE} has been updated')
   except Exception as error:
-    print_message(f'{Back.RED} {error}')
+    print(f'{Back.RED}{error}')
     input()
 
 def get_main_params(page):
@@ -89,10 +85,10 @@ def parse_main_list(page):
 
       list.append(listItem)
 
-    # print_message(json.dumps(list, indent=2))
+    # print(json.dumps(list, indent=2))
     return list
   else:
-    print_message(f'{Fore.RED} Error: {html.status_code}')
+    print(f'{Back.RED}   {Fore.WHITE}Error: {html.status_code}{Back.BLACK}{Fore.RED}█▓▒░')
 
 def get_tail_by_head(head, data):
   regexp = f'M{head}A%assetid%D(\d{{19}})'
@@ -102,7 +98,7 @@ def get_tail_by_head(head, data):
     id = id.group()
     return id.split('D')[1]
   else:
-    print_message(f'{Fore.MAGENTA} ID with head {head} no matched')
+    print(f'{Fore.CYAN}├─ {Fore.WHITE}ID with head {head} no matched')
     return False
 
 def get_float(id):
@@ -117,8 +113,21 @@ def get_float(id):
     return data['iteminfo']['floatvalue']
 
   else:
-    print_message(f'{Fore.RED} Error: {response.status_code}')
+    print(f'{Back.RED}   {Fore.WHITE}Error: {response.status_code}{Back.BLACK}{Fore.RED}█▓▒░')
+
+    if response.status_code == 429:
+      print(f'{Back.RED}   {Fore.WHITE}Sleep {TIMEOUT * 5}sec…{Back.BLACK}{Fore.RED}█▓▒░')
+      time.sleep(TIMEOUT * 5)
+
     return False
+
+def print_skin_status(index, value, added):
+  float_value = f'{Fore.GREEN}{value}' if added else f'{Fore.WHITE}{value}'
+
+  info_main = f'{Fore.CYAN}├─ {Fore.WHITE}Skin: {Fore.CYAN}{index + 1} {Fore.WHITE}/ 10'
+  info_float = f'float: {float_value}{Fore.WHITE}'
+  info_status = f'{Fore.GREEN}Added!' if added else f'{Fore.RED}Skipped'
+  print(f'{info_main}; {info_float}; {info_status}')
 
 def parse_main_list_item(list):
   skins = []
@@ -127,8 +136,6 @@ def parse_main_list_item(list):
     return False
 
   for item in list:
-    time.sleep(TIMEOUT) # sleep before STEAM request
-
     html = requests.get(item['url'], headers=HEADERS)
     soup = BeautifulSoup(html.text, 'html.parser')
     result = soup.find(id='searchResultsRows')
@@ -147,7 +154,8 @@ def parse_main_list_item(list):
 
       items = result.find_all('div', class_='market_listing_row')
 
-      for item in items:
+      print(f'{Back.BLUE}   {Fore.WHITE}Parsing: {Fore.YELLOW}{name}{Back.BLACK}{Fore.BLUE}█▓▒░')
+      for index, item in enumerate(items):
         link = item.find('a', class_='item_market_action_button', href=True)
 
         if link:
@@ -164,15 +172,19 @@ def parse_main_list_item(list):
             id = f'M{params[0]}A{params[1]}D{tail}'
             float_value = get_float(id)
 
-            if float_value and float_value <= 0.07:
-              skin['floats'].append(float_value)
+            price = item.find('span', class_='market_listing_price_with_fee')
 
-              price = item.find('span', class_='market_listing_price_with_fee')
-              skin['prices'].append(price.get_text())
+            if float_value and float_value < 0.01:
+              skin['floats'].append(float_value)
+              skin['prices'].append(price.get_text(strip=True))
+
+              print_skin_status(index, float_value, True)
+            elif float_value:
+              print_skin_status(index, float_value, False)
 
       if len(skin['floats']) != 0:
         skins.append(skin)
-        print_message(f'{Back.BLUE} Parsed: {Fore.YELLOW}{name} ')
+        file_write(skins)
 
   return skins
 
@@ -180,18 +192,15 @@ def main():
   if os.path.exists(STEAM_FILE):
     os.remove(STEAM_FILE)
 
-  pages = 20
+  pages = 100
 
   for page in range(1, pages + 1):
-    print_message(f'>>>{Fore.GREEN} Parsing page {page} from {pages}...')
+    print(f'{Back.GREEN}   {Fore.BLACK}Parsing page {page} from {pages}{Back.BLACK}{Fore.GREEN}█▓▒░')
 
     list = parse_main_list(page)
     skins = parse_main_list_item(list)
 
-    if skins:
-      file_write(skins)
-
-  print_message(f'{Fore.BLUE} Work is done. Press Enter to close...')
+  print(f'{Fore.YELLOW}└─░▒▓█{Back.YELLOW}{Fore.BLACK}Work is done. Press Enter to close…{Back.BLACK}{Fore.YELLOW}█▓▒░')
   input()
 
 main()

@@ -2,7 +2,7 @@ build
 dist
 dump
 
-parserStage2.spec
+*.spec
 
 steam/__pycache__
 data.html
