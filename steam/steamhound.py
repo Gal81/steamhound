@@ -107,7 +107,7 @@ def get_tail_by_head(head, data):
     id = id.group()
     return id.split('D')[1]
   else:
-    print(f'{Fore.CYAN}├─ {Fore.WHITE}ID with head {head} no matched')
+    print(f'{Fore.CYAN}├─ {Fore.YELLOW}ID no matched')
     return False
 
 def get_float(id):
@@ -190,7 +190,7 @@ def parse_main_list_item(list):
               print_lot_status(lot_index, float_value, False)
 
         else:
-          print(f'{Fore.YELLOW}├─ link is wrong')
+          print(f'{Fore.CYAN}├─ {Fore.YELLOW}link is wrong')
 
       if len(skin['floats']) != 0:
         skins.append(skin)
