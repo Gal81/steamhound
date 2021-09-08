@@ -8,7 +8,7 @@ from json2html import *
 from colorama import init, Fore, Back
 init(autoreset=True)
 
-TIMEOUT = 1.50
+TIMEOUT = 2.50
 
 HEADERS = {
   'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:91.0) Gecko/20100101 Firefox/91.0',
@@ -60,6 +60,10 @@ def get_main_params(page):
     'category_730_Exterior[]': 'tag_WearCategory0',
   }
 
+def sleep_on_429():
+  print(f'{Back.RED}   {Fore.WHITE}Sleep {TIMEOUT * 60}sec…{Back.BLACK}{Fore.RED}█▓▒░')
+  time.sleep(TIMEOUT * 60)
+
 def get_main_list_html(page):
   url = STEAM_HOST + STEAM_URL
   params = get_main_params(page)
@@ -90,6 +94,9 @@ def parse_main_list(page):
   else:
     print(f'{Back.RED}   {Fore.WHITE}Error: {html.status_code}{Back.BLACK}{Fore.RED}█▓▒░')
 
+    if html.status_code == 429:
+      sleep_on_429()
+
 def get_tail_by_head(head, data):
   regexp = f'M{head}A%assetid%D(\d{{19}})'
   id = re.search(r'' + regexp, '%s' % data)
@@ -116,8 +123,7 @@ def get_float(id):
     print(f'{Back.RED}   {Fore.WHITE}Error: {response.status_code}{Back.BLACK}{Fore.RED}█▓▒░')
 
     if response.status_code == 429:
-      print(f'{Back.RED}   {Fore.WHITE}Sleep {TIMEOUT * 5}sec…{Back.BLACK}{Fore.RED}█▓▒░')
-      time.sleep(TIMEOUT * 5)
+      sleep_on_429()
 
     return False
 
@@ -136,6 +142,8 @@ def parse_main_list_item(list):
     return False
 
   for item in list:
+    time.sleep(TIMEOUT) # sleep before data request
+
     html = requests.get(item['url'], headers=HEADERS)
     soup = BeautifulSoup(html.text, 'html.parser')
     result = soup.find(id='searchResultsRows')
@@ -167,8 +175,6 @@ def parse_main_list_item(list):
           tail = get_tail_by_head(params[0], data_assets)
 
           if tail:
-            time.sleep(TIMEOUT) # sleep before API request
-
             id = f'M{params[0]}A{params[1]}D{tail}'
             float_value = get_float(id)
 
