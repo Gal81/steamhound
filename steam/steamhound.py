@@ -1,5 +1,6 @@
 import os
 import re
+import sys
 import json
 import time
 import requests
@@ -118,7 +119,7 @@ def get_lot_link_tail(link):
     id = id.group()
     return id.split('D')[1]
   else:
-    print(f'{Fore.CYAN}├─ {Fore.YELLOW}ID no matched')
+    # print(f'{Fore.CYAN}├─ {Fore.YELLOW}ID no matched')
     return False
 
 def get_float(id):
@@ -133,9 +134,10 @@ def get_float(id):
     return data['iteminfo']['floatvalue']
 
   else:
-    print(f'{Back.RED}{Fore.WHITE} » Error: "api.csgofloat.com" get {response.status_code}{Back.BLACK}{Fore.RED}█▓▒░')
+    # print(f'{Back.RED}{Fore.WHITE} » Error: "api.csgofloat.com" get {response.status_code}{Back.BLACK}{Fore.RED}█▓▒░')
     return False
 
+# Obsolete
 def print_lot_status(index, count, value, added):
   cutter = 1000000
   trim_value = round(value * cutter) / cutter
@@ -145,6 +147,22 @@ def print_lot_status(index, count, value, added):
   info_float = f'float: {float_value}{Fore.WHITE}'
   info_status = f'{Fore.GREEN}Added!' if added else f'{Fore.RED}Skipped'
   print(f'{info_main}; {info_float}; {info_status}')
+
+STATUS_ADDED = 'added'
+STATUS_SKIPPED = 'skipped'
+STATUS_ERROR = 'error'
+
+def print_progress(status):
+  color = f'{Fore.BLACK}'
+
+  if status == STATUS_ADDED:
+    color = f'{Fore.GREEN}'
+  elif status == STATUS_SKIPPED:
+    color = f'{Fore.MAGENTA}'
+  else:
+    color = f'{Fore.RED}'
+
+  print(f'{color}▒', end='')
 
 def parse_lots(list):
   skins = []
@@ -193,9 +211,18 @@ def parse_lots(list):
           skin['floats'].append(float_value)
           skin['prices'].append(price.get_text(strip=True))
 
-          print_lot_status(lot_index, lots_count, float_value, True)
+          print_progress(STATUS_ADDED)
+          # print_lot_status(lot_index, lots_count, float_value, True)
         elif float_value:
-          print_lot_status(lot_index, lots_count, float_value, False)
+          print_progress(STATUS_SKIPPED)
+          # print_lot_status(lot_index, lots_count, float_value, False)
+        else:
+          print_progress(STATUS_ERROR)
+
+      else:
+        print_progress(STATUS_ERROR)
+
+    print('')
 
     if len(skin['floats']) != 0:
       skins.append(skin)
@@ -208,7 +235,7 @@ def main():
     os.remove(STEAM_FILE)
 
   skins_count = 100
-  print(f'{Back.GREEN}{Fore.BLACK} » Parsing first {skins_count} skins{Back.BLACK}{Fore.GREEN}█▓▒░')
+  print(f'{Back.GREEN}{Fore.BLACK} » Parsing {skins_count} skins{Back.BLACK}{Fore.GREEN}█▓▒░')
 
   page = 0
   while True:
