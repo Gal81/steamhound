@@ -12,7 +12,8 @@ TIMEOUT = 1.00
 
 HEADERS = {
   'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:91.0) Gecko/20100101 Firefox/91.0',
-  'accept': '*/*'
+  # 'Cookie': 'steamCountry=UA%7C96c295d63aed70ab2bf88918ec2f2bc2; timezoneOffset=10800,0',
+  'Accept': '*/*'
 }
 
 STEAM_HOST = 'https://steamcommunity.com'
@@ -43,21 +44,31 @@ def file_write(data):
     print(f'{Back.RED}{error}')
     input()
 
-def get_main_params(page):
+def get_main_params(page, count):
   return {
     'query': '',
     'start': page,
-    'count': 100,
-    'search_descriptions': 1,
-    'sort_column': 'price',
-    'sort_dir': 'asc',
+    'count': count,
     'appid': 730,
+    'sort_dir': 'asc',
+    'sort_column': 'price',
+    'search_descriptions': 1,
+    'category_730_Weapon[]': 'any',
     'category_730_ItemSet[]': 'any',
     'category_730_ProPlayer[]': 'any',
     'category_730_StickerCapsule[]': 'any',
     'category_730_TournamentTeam[]': 'any',
-    'category_730_Weapon[]': 'any',
     'category_730_Exterior[]': 'tag_WearCategory0',
+  }
+
+def get_lots_params():
+  return {
+    'query': '',
+    'start': 0,
+    'count': 100,
+    'country': 'UA',
+    'language': 'russian',
+    'currency': 1,
   }
 
 def sleep_on_429():
@@ -65,13 +76,13 @@ def sleep_on_429():
   print(f'{Back.RED}{Fore.WHITE} » Sleep {sleep_timeout}sec…{Back.BLACK}{Fore.RED}█▓▒░')
   time.sleep(sleep_timeout)
 
-def get_main_list_html(page):
+def get_main_list_html(page, count):
   url = STEAM_HOST + STEAM_URL
-  params = get_main_params(page)
+  params = get_main_params(page, count)
   return requests.get(url, headers=HEADERS, params=params)
 
-def parse_main_list(page):
-  html = get_main_list_html(page)
+def parse_main_list(page, count):
+  html = get_main_list_html(page, count)
 
   if html.status_code == 200:
     json_object = json.loads(html.text)
@@ -99,9 +110,9 @@ def parse_main_list(page):
       sleep_on_429()
       return False
 
-def get_tail_by_head(head, data):
-  regexp = f'M{head}A%assetid%D(\d{{19}})'
-  id = re.search(r'' + regexp, '%s' % data)
+def get_lot_link_tail(link):
+  regexp = f'M%listingid%A%assetid%D(\d{{19}})'
+  id = re.search(r'' + regexp, '%s' % link)
 
   if id:
     id = id.group()
@@ -125,76 +136,70 @@ def get_float(id):
     print(f'{Back.RED}{Fore.WHITE} » Error: "api.csgofloat.com" get {response.status_code}{Back.BLACK}{Fore.RED}█▓▒░')
     return False
 
-def print_lot_status(index, value, added):
+def print_lot_status(index, count, value, added):
   cutter = 1000000
   trim_value = round(value * cutter) / cutter
   float_value = f'{Fore.GREEN}{trim_value}' if added else f'{Fore.WHITE}{trim_value}'
 
-  info_main = f'{Fore.CYAN}├─ {Fore.WHITE}Lot: {Fore.CYAN}{index + 1}{Fore.WHITE}/10'
+  info_main = f'{Fore.CYAN}├─ {Fore.WHITE}Lot: {Fore.CYAN}{index + 1}{Fore.WHITE}/{count}'
   info_float = f'float: {float_value}{Fore.WHITE}'
   info_status = f'{Fore.GREEN}Added!' if added else f'{Fore.RED}Skipped'
   print(f'{info_main}; {info_float}; {info_status}')
 
-def parse_main_list_item(list):
+def parse_lots(list):
   skins = []
 
   if list is None:
     return False
 
   for list_index, list_item in enumerate(list):
-    html = requests.get(list_item['url'], headers=HEADERS)
-    soup = BeautifulSoup(html.text, 'html.parser')
-    result = soup.find(id='searchResultsRows')
+    params=get_lots_params()
+    html = requests.get(list_item['url'] + '/render/', headers=HEADERS, params=params)
+    json_object = json.loads(html.text)
+    text = json_object['results_html']
+    soup = BeautifulSoup(text, 'html.parser')
 
-    data_assets = soup.find_all('script')[-1]
+    url = list_item['url']
+    name = list_item["name"]
+    link = f'<a href="{url}" target="_blank">{name}</a>'
+    skin = {
+      'name': link,
+      'floats': [],
+      'prices': [],
+    }
 
-    if result:
-      url = list_item['url']
-      name = list_item["name"]
-      link = f'<a href="{url}" target="_blank">{name}</a>'
-      skin = {
-        'name': link,
-        'floats': [],
-        'prices': [],
-      }
+    skin_index = f'» {list_index + 1}/{len(list)}:'
+    print(f'{Back.BLUE} {Fore.WHITE}{skin_index} {Fore.YELLOW}{name}{Back.BLACK}{Fore.BLUE}█▓▒░')
 
-      lots = result.find_all('div', class_='market_listing_row')
-      lot_index = f'» {list_index + 1}/{len(list)}:'
+    lots = soup.find_all('div', class_='market_listing_row', id=True)
+    lots_count = len(lots)
 
-      print(f'{Back.BLUE} {Fore.WHITE}{lot_index} {Fore.YELLOW}{name}{Back.BLACK}{Fore.BLUE}█▓▒░')
-      for lot_index, lot in enumerate(lots):
-        time.sleep(TIMEOUT) # sleep before data request
+    for lot_index, lot in enumerate(lots):
+      time.sleep(TIMEOUT) # sleep before data request
 
-        link = lot.find('a', class_='item_market_action_button', href=True)
+      listing_id = lot['id'].replace('listing_', '')
+      listing_info = json_object['listinginfo'][listing_id]
+      asset_id = listing_info['asset']['id']
+      link = listing_info['asset']['market_actions'][0]['link']
+      tail = get_lot_link_tail(link)
 
-        if link:
-          params = link['href'].replace('javascript:BuyMarketListing(\'listing\', \'', '')
-          params = params.replace('\', 730, \'2\'', '')
-          params = params.replace('\')', '')
-          params = params.split(', \'')
+      if tail:
+        id = f'M{listing_id}A{asset_id}D{tail}'
+        float_value = get_float(id)
 
-          tail = get_tail_by_head(params[0], data_assets)
+        price = lot.find('span', class_='market_listing_price_with_fee')
 
-          if tail:
-            id = f'M{params[0]}A{params[1]}D{tail}'
-            float_value = get_float(id)
+        if float_value and float_value < 0.01:
+          skin['floats'].append(float_value)
+          skin['prices'].append(price.get_text(strip=True))
 
-            price = lot.find('span', class_='market_listing_price_with_fee')
+          print_lot_status(lot_index, lots_count, float_value, True)
+        elif float_value:
+          print_lot_status(lot_index, lots_count, float_value, False)
 
-            if float_value and float_value < 0.01:
-              skin['floats'].append(float_value)
-              skin['prices'].append(price.get_text(strip=True))
-
-              print_lot_status(lot_index, float_value, True)
-            elif float_value:
-              print_lot_status(lot_index, float_value, False)
-
-        else:
-          print(f'{Fore.CYAN}├─ {Fore.YELLOW}link is wrong')
-
-      if len(skin['floats']) != 0:
-        skins.append(skin)
-        file_write(skins)
+    if len(skin['floats']) != 0:
+      skins.append(skin)
+      file_write(skins)
 
   return skins
 
@@ -202,14 +207,15 @@ def main():
   if os.path.exists(STEAM_FILE):
     os.remove(STEAM_FILE)
 
-  print(f'{Back.GREEN}{Fore.BLACK} » Parsing first 100 skins{Back.BLACK}{Fore.GREEN}█▓▒░')
+  skins_count = 100
+  print(f'{Back.GREEN}{Fore.BLACK} » Parsing first {skins_count} skins{Back.BLACK}{Fore.GREEN}█▓▒░')
 
-  page = 1
+  page = 0
   while True:
-    list = parse_main_list(page)
+    list = parse_main_list(page, skins_count)
 
     if list:
-      parse_main_list_item(list)
+      parse_lots(list)
     else:
       print(f'{Back.RED}{Fore.WHITE} » Error. Press Enter to RESTART…{Back.BLACK}{Fore.RED}█▓▒░')
       input()
