@@ -42,7 +42,7 @@ def file_write(data):
       file.close()
       print(f'{Fore.CYAN}█─ File {STEAM_FILE} has been updated')
   except Exception as error:
-    print(f'{Back.RED}{error}')
+    print(f'{Back.RED}{Fore.WHITE}{error}')
     input()
 
 def get_main_params(page, count):
@@ -151,6 +151,7 @@ def print_lot_status(index, count, value, added):
 STATUS_ADDED = 'added'
 STATUS_SKIPPED = 'skipped'
 STATUS_ERROR = 'error'
+STATUS_WARNING = 'warning'
 
 def print_progress(status):
   color = f'{Fore.BLACK}'
@@ -159,6 +160,8 @@ def print_progress(status):
     color = f'{Fore.GREEN}'
   elif status == STATUS_SKIPPED:
     color = f'{Fore.MAGENTA}'
+  elif status == STATUS_WARNING:
+    color = f'{Fore.YELLOW}'
   else:
     color = f'{Fore.RED}'
 
@@ -171,62 +174,67 @@ def parse_lots(list):
     return False
 
   for list_index, list_item in enumerate(list):
-    params=get_lots_params()
-    html = requests.get(list_item['url'] + '/render/', headers=HEADERS, params=params)
-    json_object = json.loads(html.text)
-    text = json_object['results_html']
-    soup = BeautifulSoup(text, 'html.parser')
+    try:
+      params=get_lots_params()
+      html = requests.get(list_item['url'] + '/render/', headers=HEADERS, params=params)
+      json_object = json.loads(html.text)
+      text = json_object['results_html']
+      soup = BeautifulSoup(text, 'html.parser')
 
-    url = list_item['url']
-    name = list_item["name"]
-    link = f'<a href="{url}" target="_blank">{name}</a>'
-    skin = {
-      'name': link,
-      'floats': [],
-      'prices': [],
-    }
+      url = list_item['url']
+      name = list_item["name"]
+      link = f'<a href="{url}" target="_blank">{name}</a>'
+      skin = {
+        'name': link,
+        'floats': [],
+        'prices': [],
+      }
 
-    skin_index = f'» {list_index + 1}/{len(list)}:'
-    print(f'{Back.BLUE} {Fore.WHITE}{skin_index} {Fore.YELLOW}{name}{Back.BLACK}{Fore.BLUE}█▓▒░')
+      skin_index = f'» {list_index + 1}/{len(list)}:'
+      print(f'{Back.BLUE} {Fore.WHITE}{skin_index} {Fore.YELLOW}{name}{Back.BLACK}{Fore.BLUE}█▓▒░')
 
-    lots = soup.find_all('div', class_='market_listing_row', id=True)
-    lots_count = len(lots)
+      lots = soup.find_all('div', class_='market_listing_row', id=True)
+      lots_count = len(lots)
 
-    for lot_index, lot in enumerate(lots):
-      time.sleep(TIMEOUT) # sleep before data request
+      for lot_index, lot in enumerate(lots):
+        time.sleep(TIMEOUT) # sleep before data request
 
-      listing_id = lot['id'].replace('listing_', '')
-      listing_info = json_object['listinginfo'][listing_id]
-      asset_id = listing_info['asset']['id']
-      link = listing_info['asset']['market_actions'][0]['link']
-      tail = get_lot_link_tail(link)
+        listing_id = lot['id'].replace('listing_', '')
+        listing_info = json_object['listinginfo'][listing_id]
+        asset_id = listing_info['asset']['id']
+        link = listing_info['asset']['market_actions'][0]['link']
+        tail = get_lot_link_tail(link)
 
-      if tail:
-        id = f'M{listing_id}A{asset_id}D{tail}'
-        float_value = get_float(id)
+        if tail:
+          id = f'M{listing_id}A{asset_id}D{tail}'
+          float_value = get_float(id)
 
-        price = lot.find('span', class_='market_listing_price_with_fee')
+          price = lot.find('span', class_='market_listing_price_with_fee')
 
-        if float_value and float_value < 0.01:
-          skin['floats'].append(float_value)
-          skin['prices'].append(price.get_text(strip=True))
+          if float_value and float_value < 0.01:
+            skin['floats'].append(float_value)
+            skin['prices'].append(price.get_text(strip=True))
 
-          print_progress(STATUS_ADDED)
-          # print_lot_status(lot_index, lots_count, float_value, True)
-        elif float_value:
-          print_progress(STATUS_SKIPPED)
-          # print_lot_status(lot_index, lots_count, float_value, False)
+            print_progress(STATUS_ADDED)
+            # print_lot_status(lot_index, lots_count, float_value, True)
+          elif float_value:
+            print_progress(STATUS_SKIPPED)
+            # print_lot_status(lot_index, lots_count, float_value, False)
+          else:
+            print_progress(STATUS_ERROR)
+
         else:
-          print_progress(STATUS_ERROR)
+          print_progress(STATUS_WARNING)
 
-      else:
-        print_progress(STATUS_ERROR)
+      print('')
 
-    print('')
+      if len(skin['floats']) != 0:
+        skins.append(skin)
+        file_write(skins)
 
-    if len(skin['floats']) != 0:
-      skins.append(skin)
-      file_write(skins)
+    except Exception as error:
+      print(f'{Back.RED}{Fore.WHITE}{error}')
+      input()
 
   return skins
 
@@ -235,7 +243,7 @@ def main():
     os.remove(STEAM_FILE)
 
   skins_count = 100
-  print(f'{Back.GREEN}{Fore.BLACK} » Parsing {skins_count} skins{Back.BLACK}{Fore.GREEN}█▓▒░')
+  print(f'{Back.GREEN}{Fore.BLACK} » Let´s rock!{Back.BLACK}{Fore.GREEN}█▓▒░')
 
   page = 0
   while True:
