@@ -1,6 +1,5 @@
 import os
 import re
-import sys
 import json
 import time
 import requests
@@ -13,7 +12,6 @@ TIMEOUT = 1.00
 
 HEADERS = {
   'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:91.0) Gecko/20100101 Firefox/91.0',
-  # 'Cookie': 'steamCountry=UA%7C96c295d63aed70ab2bf88918ec2f2bc2; timezoneOffset=10800,0',
   'Accept': '*/*'
 }
 
@@ -178,8 +176,6 @@ def print_progress(status):
   print(f'{char}', end='')
 
 def parse_lots(list):
-  skins = []
-
   if list is None:
     return False
 
@@ -242,10 +238,7 @@ def parse_lots(list):
     print(' «')
 
     if len(skin['floats']) != 0:
-      skins.append(skin)
-      file_write(skins)
-
-  return skins
+      file_write(skin)
 
 def main():
   if os.path.exists(STEAM_FILE):
