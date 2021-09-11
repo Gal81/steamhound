@@ -19,31 +19,10 @@ HEADERS = {
 
 STEAM_HOST = 'https://steamcommunity.com'
 STEAM_URL = '/market/search/render'
-STEAM_FILE = 'data.html'
+STEAM_FILE = 'lots.html'
 
 CSGO_HOST = 'https://api.csgofloat.com'
 CSGO_ITEM_HEAD = 'steam://rungame/730/76561202255233023/+csgo_econ_action_preview%20'
-
-def file_write(data):
-  html = json2html.convert(json=data)
-  chars = [
-    ['&lt;', '<'],
-    ['&gt;', '>'],
-    ['&quot;', '"'],
-    ['&amp;', '&'],
-  ]
-
-  for char in chars:
-    html = html.replace(char[0], char[1])
-
-  try:
-    with open(STEAM_FILE, 'a', encoding='utf-8') as file:
-      file.write('%s\n' % html)
-      file.close()
-      print(f'{Fore.CYAN}█─ File {STEAM_FILE} has been updated')
-  except Exception as error:
-    print(f'{Back.RED}{Fore.WHITE}{error}')
-    input()
 
 def get_main_params(page, count):
   return {
@@ -76,6 +55,31 @@ def sleep_on_429():
   sleep_timeout = TIMEOUT * 60
   print(f'{Back.RED}{Fore.WHITE} » Sleep {sleep_timeout}sec…{Back.BLACK}{Fore.RED}█▓▒░')
   time.sleep(sleep_timeout)
+
+def print_error(error):
+  print()
+  print(f'{Back.RED}{Fore.WHITE}{error}')
+  input()
+
+def file_write(data):
+  html = json2html.convert(json=data)
+  chars = [
+    ['&lt;', '<'],
+    ['&gt;', '>'],
+    ['&quot;', '"'],
+    ['&amp;', '&'],
+  ]
+
+  for char in chars:
+    html = html.replace(char[0], char[1])
+
+  try:
+    with open(STEAM_FILE, 'a', encoding='utf-8') as file:
+      file.write('%s\n' % html)
+      file.close()
+      print(f'{Fore.CYAN}█─ File {STEAM_FILE} has been updated')
+  except Exception as error:
+    print_error(error)
 
 def get_main_list_html(page, count):
   url = STEAM_HOST + STEAM_URL
@@ -233,8 +237,7 @@ def parse_lots(list):
         file_write(skins)
 
     except Exception as error:
-      print(f'{Back.RED}{Fore.WHITE}{error}')
-      input()
+      print_error(error)
 
   return skins
 
