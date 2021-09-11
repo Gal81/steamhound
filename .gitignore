@@ -3,6 +3,6 @@ dist
 dump
 
 *.spec
+*.html
 
 steam/__pycache__
-data.html
