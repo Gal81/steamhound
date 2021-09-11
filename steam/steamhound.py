@@ -80,7 +80,12 @@ def send_message_to_chats(message):
     input()
 
 def file_write(data):
-  html = json2html.convert(json=data)
+  json = {
+    'name': data['name'],
+    'floats': data['floats'],
+    'prices': data['prices'],
+  }
+  html = json2html.convert(json=json)
   chars = [
     ['&lt;', '<'],
     ['&gt;', '>'],
@@ -95,9 +100,11 @@ def file_write(data):
     with open(STEAM_FILE, 'a', encoding='utf-8') as file:
       file.write('%s\n' % html)
       file.close()
-      print(f'{Fore.CYAN}█─ File {STEAM_FILE} has been updated')
+      print(f'{Fore.YELLOW}█─ File {STEAM_FILE} has been updated')
 
-      send_message_to_chats(html)
+      chat_message = f'{data["url"]}\nFLOATS: {data["floats"]}\nPRICES: {data["prices"]}'
+      send_message_to_chats(chat_message)
+      print(f'{Fore.CYAN}█─ Message sent to telegram')
 
   except Exception as error:
     print_error(error)
@@ -221,6 +228,7 @@ def parse_lots(list):
     name = list_item["name"]
     link = f'<a href="{url}" target="_blank">{name}</a>'
     skin = {
+      'url': url,
       'name': link,
       'floats': [],
       'prices': [],
