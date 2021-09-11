@@ -1,5 +1,6 @@
 import os
 import re
+# import bot
 import json
 import time
 import requests
@@ -80,15 +81,26 @@ def file_write(data):
     print_error(error)
 
 def get_main_list_html(page, count):
-  print(f'{Back.YELLOW}{Fore.BLACK} » Skins list loading…{Back.BLACK}{Fore.YELLOW}█▓▒░')
-  url = STEAM_HOST + STEAM_URL
-  params = get_main_params(page, count)
-  return requests.get(url, headers=HEADERS, params=params)
+  try:
+    print(f'{Back.YELLOW}{Fore.BLACK} » Skins list loading…{Back.BLACK}{Fore.YELLOW}█▓▒░')
+    url = STEAM_HOST + STEAM_URL
+    params = get_main_params(page, count)
+    response = requests.get(url, headers=HEADERS, params=params)
+
+    if response.status_code == 200:
+      return response
+    else:
+      print(f'{Back.RED}{Fore.WHITE} » Error: {response.status_code}{Back.BLACK}{Fore.RED}█▓▒░')
+      return False
+
+  except Exception as error:
+    print_error(error)
+    return False
 
 def parse_main_list(page, count):
   html = get_main_list_html(page, count)
 
-  if html.status_code == 200:
+  if html:
     json_object = json.loads(html.text)
     text = json_object['results_html']
     soup = BeautifulSoup(text, 'html.parser')
@@ -107,12 +119,6 @@ def parse_main_list(page, count):
 
     # print(json.dumps(list, indent=2))
     return list
-  else:
-    print(f'{Back.RED}{Fore.WHITE} » Error: {html.status_code}{Back.BLACK}{Fore.RED}█▓▒░')
-
-    if html.status_code == 429:
-      sleep_on_error()
-      return False
 
 def get_lot_link_tail(link):
   regexp = f'M%listingid%A%assetid%D(\d{{19}})'
