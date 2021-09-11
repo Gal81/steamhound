@@ -3,6 +3,7 @@ import re
 # import bot
 import json
 import time
+import config
 import requests
 from bs4 import BeautifulSoup
 from json2html import *
@@ -50,6 +51,7 @@ def get_lots_params():
     'currency': 1,
   }
 
+# Obsolete
 def sleep_on_error():
   timeout = TIMEOUT * 60
   time.sleep(timeout)
@@ -59,6 +61,23 @@ def print_error(error):
   print()
   print(f'{Back.RED}{Fore.WHITE}{error}')
   input()
+
+def send_message_to_chats(message):
+  try:
+    file = open(config.FILE_USERS, 'r')
+    ids = file.read().split('\n')
+    file.close()
+
+    for id in ids:
+      chat_data = {
+        'chat_id': id,
+        'text': message,
+      }
+      requests.post(f'https://api.telegram.org/bot{config.TELEGRAM_TOKEN}/sendMessage', data=chat_data)
+
+  except Exception as error:
+    print_error(error)
+    input()
 
 def file_write(data):
   html = json2html.convert(json=data)
@@ -77,6 +96,9 @@ def file_write(data):
       file.write('%s\n' % html)
       file.close()
       print(f'{Fore.CYAN}█─ File {STEAM_FILE} has been updated')
+
+      send_message_to_chats(html)
+
   except Exception as error:
     print_error(error)
 
