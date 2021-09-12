@@ -1,8 +1,8 @@
 import os
 import re
-# import bot
 import json
 import time
+import math
 import config
 import requests
 from bs4 import BeautifulSoup
@@ -30,6 +30,7 @@ def get_main_params(page, count):
     'start': page,
     'count': count,
     'appid': 730,
+    # 'norender': 1,
     'sort_dir': 'asc',
     'sort_column': 'price',
     'search_descriptions': 1,
@@ -135,6 +136,9 @@ def get_parsed_skins(page, count):
     json_object = json.loads(html.text)
     text = json_object['results_html']
     soup = BeautifulSoup(text, 'html.parser')
+
+    # Debug
+    # print(html.url)
 
     items = []
     try:
@@ -243,6 +247,7 @@ def parse_lots(list):
       skin = {
         'url': url,
         'name': link,
+        'pages': [],
         'floats': [],
         'prices': [],
       }
@@ -277,6 +282,7 @@ def parse_lots(list):
           if float_value and float_value < 0.01:
             skin['floats'].append(float_value)
             skin['prices'].append(price.get_text(strip=True))
+            skin['pages'].append(math.ceil(skin_index / 10))
 
             print_progress(STATUS_ADDED)
             # print_lot_status(lot_index, lots_count, float_value, True)
