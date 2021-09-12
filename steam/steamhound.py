@@ -59,7 +59,7 @@ def sleep_on_error():
 
 def print_error(error):
   print()
-  print(f'{Back.RED}{Fore.WHITE}{error}')
+  print(f'{Back.RED}{Fore.WHITE}{error} ')
   input()
 
 def send_message_to_chats(message):
@@ -110,10 +110,11 @@ def file_write(data):
     print_error(error)
 
 def get_main_list_html(page, count):
+  print(f'{Back.YELLOW}{Fore.BLACK} » Skins list loading…{Back.BLACK}{Fore.YELLOW}█▓▒░')
+  url = STEAM_HOST + STEAM_URL
+  params = get_main_params(page, count)
+
   try:
-    print(f'{Back.YELLOW}{Fore.BLACK} » Skins list loading…{Back.BLACK}{Fore.YELLOW}█▓▒░')
-    url = STEAM_HOST + STEAM_URL
-    params = get_main_params(page, count)
     response = requests.get(url, headers=HEADERS, params=params)
 
     if response.status_code == 200:
@@ -126,7 +127,7 @@ def get_main_list_html(page, count):
     print_error(error)
     return False
 
-def parse_main_list(page, count):
+def get_parsed_skins(page, count):
   html = get_main_list_html(page, count)
 
   if html:
@@ -148,6 +149,9 @@ def parse_main_list(page, count):
 
     # print(json.dumps(list, indent=2))
     return list
+
+  else:
+    return False
 
 def get_lot_link_tail(link):
   regexp = f'M%listingid%A%assetid%D(\d{{19}})'
@@ -215,7 +219,7 @@ def parse_lots(list):
     return False
 
   for list_index, list_item in enumerate(list):
-    params=get_lots_params()
+    params = get_lots_params()
     html = requests.get(list_item['url'] + '/render/', headers=HEADERS, params=params)
     json_object = json.loads(html.text)
     text = json_object['results_html']
@@ -285,13 +289,17 @@ def main():
 
   page = 0
   while True:
-    list = parse_main_list(page, skins_count)
+    try:
+      skins = get_parsed_skins(page, skins_count)
 
-    if list:
-      parse_lots(list)
-    else:
-      print(f'{Back.RED}{Fore.WHITE} » Fail! Could not get list of skins. RESTARTING…{Back.BLACK}{Fore.RED}█▓▒░')
+      if skins:
+        parse_lots(skins)
+      else:
+        print(f'{Back.RED}{Fore.WHITE} » Fail! Could not get list of skins. RESTARTING…{Back.BLACK}{Fore.RED}█▓▒░')
 
-    print(f'{Back.YELLOW}{Fore.BLACK} » Work is done. RESTARTING…{Back.BLACK}{Fore.YELLOW}█▓▒░')
+      print(f'{Back.YELLOW}{Fore.BLACK} » Work is done. RESTARTING…{Back.BLACK}{Fore.YELLOW}█▓▒░')
+
+    except Exception as error:
+      print_error(error)
 
 main()

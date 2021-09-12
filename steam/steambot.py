@@ -32,5 +32,10 @@ def start(message):
   if chat_id not in ids:
     write_new_id(chat_id)
 
+@bot.message_handler(content_types=['text'])
+def log(message):
+  print(message.chat.id, ' » ', message.text)
+
 # RUN
+print(' » Run…')
 bot.polling(none_stop=True)
