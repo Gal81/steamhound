@@ -58,12 +58,12 @@ def sleep_on_error():
   print(f'{Back.RED}{Fore.WHITE} » Sleep {timeout}sec…{Back.BLACK}{Fore.RED}█▓▒░')
 
 def print_error(error):
-  print()
-  print(f'{Back.RED}{Fore.WHITE}{error} ')
+  print(f'{Fore.RED}│')
+  print(f'{Back.RED}{Fore.WHITE} ! {error} ')
   time.sleep(TIMEOUT * 5)
 
 def print_status_code(code):
-  print(f'{Back.RED}{Fore.WHITE} » Error: {code}{Back.BLACK}{Fore.RED}█▓▒░')
+  print(f'{Back.RED}{Fore.WHITE} ! Error: {code}{Back.BLACK}{Fore.RED}█▓▒░')
 
 def send_message_to_chats(message):
   try:
@@ -86,6 +86,7 @@ def file_write(data):
     'name': data['name'],
     'floats': data['floats'],
     'prices': data['prices'],
+    'pages': data['pages'],
   }
   html = json2html.convert(json=json)
   chars = [
@@ -105,8 +106,10 @@ def file_write(data):
       print(f'{Fore.YELLOW}█─ File {STEAM_FILE} has been updated')
 
       chat_message = f'{data["url"]}\nFLOATS: {data["floats"]}\nPRICES: {data["prices"]}\nPAGES: {data["pages"]}'
-      send_message_to_chats(chat_message)
-      print(f'{Fore.CYAN}█─ Message sent to telegram')
+
+      if os.path.exists(config.CHATS_IDS):
+        send_message_to_chats(chat_message)
+        print(f'{Fore.CYAN}█─ Message sent to telegram')
 
   except Exception as error:
     print_error(error)
@@ -188,7 +191,7 @@ def get_float(id):
       return data['iteminfo']['floatvalue']
 
     else:
-      # print(f'{Back.RED}{Fore.WHITE} » Error: "api.csgofloat.com" get {response.status_code}{Back.BLACK}{Fore.RED}█▓▒░')
+      # print(f'{Back.RED}{Fore.WHITE} ! Error: "api.csgofloat.com" get {response.status_code}{Back.BLACK}{Fore.RED}█▓▒░')
       return False
 
   except Exception as error:
