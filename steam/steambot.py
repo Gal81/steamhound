@@ -33,6 +33,9 @@ def start(message):
     write_new_id(chat_id)
     print(f' » New chat "{chat_id}" has been added')
 
+  bot.send_message(message.chat.id, 'You have been subscribed')
+
+
 @bot.message_handler(content_types=['text'])
 def log(message):
   print(message.chat.id, ' » ', message.text)
