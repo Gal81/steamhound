@@ -104,7 +104,7 @@ def file_write(data):
       file.close()
       print(f'{Fore.YELLOW}█─ File {STEAM_FILE} has been updated')
 
-      chat_message = f'{data["url"]}\nFLOATS: {data["floats"]}\nPRICES: {data["prices"]}'
+      chat_message = f'{data["url"]}\nFLOATS: {data["floats"]}\nPRICES: {data["prices"]}\nPAGES: {data["pages"]}'
       send_message_to_chats(chat_message)
       print(f'{Fore.CYAN}█─ Message sent to telegram')
 
@@ -282,7 +282,7 @@ def parse_lots(list):
           if float_value and float_value < 0.01:
             skin['floats'].append(float_value)
             skin['prices'].append(price.get_text(strip=True))
-            skin['pages'].append(math.ceil(lot_index / 10))
+            skin['pages'].append(math.ceil((lot_index + 1) / 10))
 
             print_progress(STATUS_ADDED)
             # print_lot_status(lot_index, lots_count, float_value, True)
