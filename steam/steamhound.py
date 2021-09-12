@@ -252,8 +252,8 @@ def parse_lots(list):
         'prices': [],
       }
 
-      skin_index = f'» {list_index + 1}/{len(list)}:'
-      print(f'{Back.BLUE} {Fore.WHITE}{skin_index} {Fore.YELLOW}{name}{Back.BLACK}{Fore.BLUE}█▓▒░')
+      skin_index = f' » {list_index + 1}/{len(list)}:'
+      print(f'{Back.BLUE}{Fore.WHITE}{skin_index} {Fore.YELLOW}{name}{Back.BLACK}{Fore.BLUE}█▓▒░')
 
       lots = []
       try:
@@ -282,7 +282,7 @@ def parse_lots(list):
           if float_value and float_value < 0.01:
             skin['floats'].append(float_value)
             skin['prices'].append(price.get_text(strip=True))
-            skin['pages'].append(math.ceil(skin_index / 10))
+            skin['pages'].append(math.ceil(lot_index / 10))
 
             print_progress(STATUS_ADDED)
             # print_lot_status(lot_index, lots_count, float_value, True)
