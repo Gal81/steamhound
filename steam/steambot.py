@@ -40,7 +40,7 @@ def start(message):
 
 @bot.message_handler(content_types=['text'])
 def log(message):
-  print(message.chat.id, ' » ', message.text)
+  print(f' » {message.chat.id}: {message.text}')
 
 # RUN
 print(' » Run…')
