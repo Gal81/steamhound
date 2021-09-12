@@ -5,7 +5,7 @@ bot = telebot.TeleBot(config.TELEGRAM_TOKEN)
 
 def get_saved_ids():
   try:
-    file = open(config.FILE_USERS, 'r')
+    file = open(config.CHATS_IDS, 'r')
     ids = file.read().split('\n')
     file.close()
     return ids
@@ -16,7 +16,7 @@ def get_saved_ids():
 
 def write_new_id(chat_id):
   try:
-    with open(config.FILE_USERS, 'a', encoding='utf-8') as file:
+    with open(config.CHATS_IDS, 'a', encoding='utf-8') as file:
       file.write('%s\n' % chat_id)
       file.close()
 

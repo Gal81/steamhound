@@ -64,7 +64,7 @@ def print_error(error):
 
 def send_message_to_chats(message):
   try:
-    file = open(config.FILE_USERS, 'r')
+    file = open(config.CHATS_IDS, 'r')
     ids = file.read().split('\n')
     file.close()
 
