@@ -51,16 +51,18 @@ def get_lots_params():
     'currency': 1,
   }
 
-# Obsolete
 def sleep_on_error():
-  timeout = TIMEOUT * 60
+  timeout = TIMEOUT * 180
   time.sleep(timeout)
   print(f'{Back.RED}{Fore.WHITE} » Sleep {timeout}sec…{Back.BLACK}{Fore.RED}█▓▒░')
 
 def print_error(error):
   print()
   print(f'{Back.RED}{Fore.WHITE}{error} ')
-  input()
+  time.sleep(TIMEOUT * 5)
+
+def print_status_code(code):
+  print(f'{Back.RED}{Fore.WHITE} » Error: {code}{Back.BLACK}{Fore.RED}█▓▒░')
 
 def send_message_to_chats(message):
   try:
@@ -77,7 +79,6 @@ def send_message_to_chats(message):
 
   except Exception as error:
     print_error(error)
-    input()
 
 def file_write(data):
   json = {
@@ -120,7 +121,7 @@ def get_main_list_html(page, count):
     if response.status_code == 200:
       return response
     else:
-      print(f'{Back.RED}{Fore.WHITE} » Error: {response.status_code}{Back.BLACK}{Fore.RED}█▓▒░')
+      print_status_code(response.status_code)
       return False
 
   except Exception as error:
@@ -134,7 +135,13 @@ def get_parsed_skins(page, count):
     json_object = json.loads(html.text)
     text = json_object['results_html']
     soup = BeautifulSoup(text, 'html.parser')
-    items = soup.find_all('a', class_='market_listing_row_link', href=True)
+
+    items = []
+    try:
+      items = soup.find_all('a', class_='market_listing_row_link', href=True)
+    except Exception as error:
+      print_error(error)
+      items = []
 
     list = []
     for item in items:
@@ -221,64 +228,77 @@ def parse_lots(list):
   for list_index, list_item in enumerate(list):
     params = get_lots_params()
     html = requests.get(list_item['url'] + '/render/', headers=HEADERS, params=params)
-    json_object = json.loads(html.text)
-    text = json_object['results_html']
-    soup = BeautifulSoup(text, 'html.parser')
 
-    # Debug
-    # print(html.url)
+    if html.status_code == 200:
+      json_object = json.loads(html.text)
+      text = json_object['results_html']
+      soup = BeautifulSoup(text, 'html.parser')
 
-    url = list_item['url']
-    name = list_item["name"]
-    link = f'<a href="{url}" target="_blank">{name}</a>'
-    skin = {
-      'url': url,
-      'name': link,
-      'floats': [],
-      'prices': [],
-    }
+      # Debug
+      # print(html.url)
 
-    skin_index = f'» {list_index + 1}/{len(list)}:'
-    print(f'{Back.BLUE} {Fore.WHITE}{skin_index} {Fore.YELLOW}{name}{Back.BLACK}{Fore.BLUE}█▓▒░')
+      url = list_item['url']
+      name = list_item["name"]
+      link = f'<a href="{url}" target="_blank">{name}</a>'
+      skin = {
+        'url': url,
+        'name': link,
+        'floats': [],
+        'prices': [],
+      }
 
-    lots = soup.find_all('div', class_='market_listing_row', id=True)
-    lots_count = len(lots)
+      skin_index = f'» {list_index + 1}/{len(list)}:'
+      print(f'{Back.BLUE} {Fore.WHITE}{skin_index} {Fore.YELLOW}{name}{Back.BLACK}{Fore.BLUE}█▓▒░')
 
-    if len(lots) == 0:
-      print(f'{Back.RED}{Fore.WHITE} » Fail! Could not get list of lots{Back.BLACK}{Fore.RED}█▓▒░', end='')
+      lots = []
+      try:
+        lots = soup.find_all('div', class_='market_listing_row', id=True)
+      except Exception as error:
+        print_error(error)
+        lots = []
 
-    for lot_index, lot in enumerate(lots):
-      listing_id = lot['id'].replace('listing_', '')
-      listing_info = json_object['listinginfo'][listing_id]
-      asset_id = listing_info['asset']['id']
-      link = listing_info['asset']['market_actions'][0]['link']
-      tail = get_lot_link_tail(link)
+      lots_count = len(lots)
+      if lots_count == 0:
+        print(f'{Back.RED}{Fore.WHITE} » Fail! Could not get list of lots{Back.BLACK}{Fore.RED}█▓▒░', end='')
 
-      if tail:
-        id = f'M{listing_id}A{asset_id}D{tail}'
-        float_value = get_float(id)
+      for lot_index, lot in enumerate(lots):
+        listing_id = lot['id'].replace('listing_', '')
+        listing_info = json_object['listinginfo'][listing_id]
+        asset_id = listing_info['asset']['id']
+        link = listing_info['asset']['market_actions'][0]['link']
+        tail = get_lot_link_tail(link)
 
-        price = lot.find('span', class_='market_listing_price_with_fee')
+        if tail:
+          id = f'M{listing_id}A{asset_id}D{tail}'
+          float_value = get_float(id)
 
-        if float_value and float_value < 0.01:
-          skin['floats'].append(float_value)
-          skin['prices'].append(price.get_text(strip=True))
+          price = lot.find('span', class_='market_listing_price_with_fee')
 
-          print_progress(STATUS_ADDED)
-          # print_lot_status(lot_index, lots_count, float_value, True)
-        elif float_value:
-          print_progress(STATUS_SKIPPED)
-          # print_lot_status(lot_index, lots_count, float_value, False)
+          if float_value and float_value < 0.01:
+            skin['floats'].append(float_value)
+            skin['prices'].append(price.get_text(strip=True))
+
+            print_progress(STATUS_ADDED)
+            # print_lot_status(lot_index, lots_count, float_value, True)
+          elif float_value:
+            print_progress(STATUS_SKIPPED)
+            # print_lot_status(lot_index, lots_count, float_value, False)
+          else:
+            print_progress(STATUS_ERROR)
+
         else:
-          print_progress(STATUS_ERROR)
+          print_progress(STATUS_WARNING)
 
-      else:
-        print_progress(STATUS_WARNING)
+      print(' «')
 
-    print(' «')
+      if len(skin['floats']) != 0:
+        file_write(skin)
 
-    if len(skin['floats']) != 0:
-      file_write(skin)
+    elif html.status_code == 429:
+      sleep_on_error()
+
+    else:
+      print_status_code(html.status_code)
 
 def main():
   if os.path.exists(STEAM_FILE):
