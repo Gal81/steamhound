@@ -26,12 +26,12 @@ def write_new_id(chat_id):
 
 @bot.message_handler(commands=['start'])
 def start(message):
-  chat_id = message.chat.id
+  chat_id = str(message.chat.id)
   ids = get_saved_ids()
 
   if chat_id not in ids:
     write_new_id(chat_id)
-    print(f' » New chat {chat_id} has been added')
+    print(f' » New chat "{chat_id}" has been added')
 
 @bot.message_handler(content_types=['text'])
 def log(message):
