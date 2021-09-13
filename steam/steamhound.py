@@ -115,7 +115,6 @@ def file_write(data):
     print_error(error)
 
 def get_main_list_html(page, count):
-  print(f'{Back.YELLOW}{Fore.BLACK} » Skins list loading…{Back.BLACK}{Fore.YELLOW}█▓▒░')
   url = STEAM_HOST + STEAM_URL
   params = get_main_params(page, count)
 
@@ -313,13 +312,16 @@ def main():
   if os.path.exists(STEAM_FILE):
     os.remove(STEAM_FILE)
 
-  skins_count = 100
   print(f'{Back.GREEN}{Fore.BLACK} » Let´s rock!{Back.BLACK}{Fore.GREEN}█▓▒░')
 
-  page = 0
+  skins = []
+  skins_count = 100
   while True:
+    print(f'{Back.YELLOW}{Fore.BLACK} » Skins list loading…{Back.BLACK}{Fore.YELLOW}█▓▒░')
+
     try:
-      skins = get_parsed_skins(page, skins_count)
+      skins += get_parsed_skins(0, skins_count)
+      skins += get_parsed_skins(100, skins_count)
 
       if skins:
         parse_lots(skins)
