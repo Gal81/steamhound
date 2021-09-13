@@ -17,12 +17,14 @@ HEADERS = {
   'Accept': '*/*'
 }
 
-STEAM_HOST = 'https://steamcommunity.com'
-STEAM_URL = '/market/search/render'
-STEAM_FILE = 'lots.html'
+HOST_STEAM = 'https://steamcommunity.com'
+URL_STEAM = '/market/search/render'
+FILE_STEAM = 'lots.html'
 
-CSGO_HOST = 'https://api.csgofloat.com'
-CSGO_ITEM_HEAD = 'steam://rungame/730/76561202255233023/+csgo_econ_action_preview%20'
+HOST_CSGO = 'https://api.csgofloat.com'
+URL_LOT = 'steam://rungame/730/76561202255233023/+csgo_econ_action_preview%20'
+
+FILE_FILTER = 'filter.txt'
 
 def get_main_params(page, count):
   return {
@@ -100,10 +102,10 @@ def file_write(data):
     html = html.replace(char[0], char[1])
 
   try:
-    with open(STEAM_FILE, 'a', encoding='utf-8') as file:
-      file.write('%s\n' % html)
+    with open(FILE_STEAM, 'a', encoding='utf-8') as file:
+      file.write(f'{html}\n')
       file.close()
-      print(f'{Fore.YELLOW}█─ File {STEAM_FILE} has been updated')
+      print(f'{Fore.YELLOW}█─ File {FILE_STEAM} has been updated')
 
       chat_message = f'{data["url"]}\nFLOATS: {data["floats"]}\nPRICES: {data["prices"]}\nPAGES: {data["pages"]}'
 
@@ -114,8 +116,28 @@ def file_write(data):
   except Exception as error:
     print_error(error)
 
+def get_filters():
+  if os.path.exists(FILE_FILTER):
+    print(f'{Back.CYAN}{Fore.BLACK} » File "{FILE_FILTER}" found. Reading…{Back.BLACK}{Fore.CYAN}█▓▒░')
+
+    file = open(FILE_FILTER, 'r')
+    data = file.read()
+    file.close()
+
+    names = data.split('\n')
+    filters = []
+    for filter in names:
+      if filter:
+        filters.append(filter)
+
+    print(f'{Back.CYAN}{Fore.BLACK} » Added {len(filters)} filters{Back.BLACK}{Fore.CYAN}█▓▒░')
+    return filters
+
+  else:
+    return False
+
 def get_main_list_html(page, count):
-  url = STEAM_HOST + STEAM_URL
+  url = HOST_STEAM + URL_STEAM
   params = get_main_params(page, count)
 
   try:
@@ -131,7 +153,7 @@ def get_main_list_html(page, count):
     print_error(error)
     return False
 
-def get_parsed_skins(page, count):
+def get_parsed_skins(page, count, filters):
   html = get_main_list_html(page, count)
 
   if html:
@@ -151,14 +173,20 @@ def get_parsed_skins(page, count):
 
     list = []
     for item in items:
-      name = item.find('span', class_='market_listing_item_name')
+      name_item = item.find('span', class_='market_listing_item_name')
+      name = name_item.get_text(strip=True)
 
       listItem = {
-        'name': name.get_text(strip=True),
+        'name': name,
         'url': item['href'],
       }
 
-      list.append(listItem)
+      # with open('names.txt', 'a', encoding='utf-8') as file:
+      #   file.write(f'{name}\n')
+      #   file.close()
+
+      if (filters and name in filters) or (filters is False):
+        list.append(listItem)
 
     # print(json.dumps(list, indent=2))
     return list
@@ -179,11 +207,11 @@ def get_lot_link_tail(link):
 
 def get_float(id):
   params = {
-    'url': CSGO_ITEM_HEAD + id
+    'url': URL_LOT + id
   }
 
   try: 
-    response = requests.get(CSGO_HOST, headers=HEADERS, params=params)
+    response = requests.get(HOST_CSGO, headers=HEADERS, params=params)
 
     if response.status_code == 200:
       data = json.loads(response.text)
@@ -309,26 +337,28 @@ def parse_lots(list):
       print_status_code(html.status_code)
 
 def main():
-  if os.path.exists(STEAM_FILE):
-    os.remove(STEAM_FILE)
+  if os.path.exists(FILE_STEAM):
+    os.remove(FILE_STEAM)
 
   print(f'{Back.GREEN}{Fore.BLACK} » Let´s rock!{Back.BLACK}{Fore.GREEN}█▓▒░')
 
-  skins = []
-  skins_count = 100
+  filters = get_filters()
   while True:
     print(f'{Back.YELLOW}{Fore.BLACK} » Skins list loading…{Back.BLACK}{Fore.YELLOW}█▓▒░')
 
+    skins = []
+    skins_count = 100
+
     try:
-      skins += get_parsed_skins(0, skins_count)
-      skins += get_parsed_skins(100, skins_count)
+      skins += get_parsed_skins(0, skins_count, filters)
+      skins += get_parsed_skins(100, skins_count, filters)
 
       if skins:
         parse_lots(skins)
       else:
-        print(f'{Back.RED}{Fore.WHITE} » Fail! Could not get list of skins. RESTARTING…{Back.BLACK}{Fore.RED}█▓▒░')
+        print(f'{Back.RED}{Fore.WHITE} » Fail! Skins list is empty. Restarting…{Back.BLACK}{Fore.RED}█▓▒░')
 
-      print(f'{Back.YELLOW}{Fore.BLACK} » Work is done. RESTARTING…{Back.BLACK}{Fore.YELLOW}█▓▒░')
+      print(f'{Back.YELLOW}{Fore.BLACK} » Work is done. Restarting…{Back.BLACK}{Fore.YELLOW}█▓▒░')
 
     except Exception as error:
       print_error(error)
