@@ -4,5 +4,7 @@ dump
 
 *.spec
 *.html
+chats.txt
 
 steam/__pycache__
+steam/config.py
