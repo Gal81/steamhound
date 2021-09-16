@@ -18,7 +18,7 @@ HEADERS = {
 }
 
 HOST_STEAM = 'https://steamcommunity.com'
-URL_STEAM = '/market/search/render'
+URL_STEAM = '/market/search/render/'
 FILE_STEAM = 'lots.html'
 
 HOST_CSGO = 'https://api.csgofloat.com'
@@ -27,21 +27,33 @@ URL_LOT = 'steam://rungame/730/76561202255233023/+csgo_econ_action_preview%20'
 FILE_FILTER = 'filter.txt'
 
 def get_main_params(page, count):
+  # 'norender': 1,
+  # 'search_descriptions': 1,
   return {
     'query': '',
     'start': page,
     'count': count,
     'appid': 730,
-    # 'norender': 1,
     'sort_dir': 'asc',
     'sort_column': 'price',
-    'search_descriptions': 1,
+    'category_730_Type[]': [
+      'tag_CSGO_Type_Pistol',
+      'tag_CSGO_Type_SMG',
+      'tag_CSGO_Type_Rifle',
+      'tag_CSGO_Type_SniperRifle',
+      'tag_CSGO_Type_Shotgun',
+      'tag_CSGO_Type_Machinegun',
+    ],
     'category_730_Weapon[]': 'any',
     'category_730_ItemSet[]': 'any',
+    'category_730_Quality[]': [
+      'tag_normal',
+      'tag_strange',
+    ],
+    'category_730_Exterior[]': 'tag_WearCategory0',
     'category_730_ProPlayer[]': 'any',
     'category_730_StickerCapsule[]': 'any',
     'category_730_TournamentTeam[]': 'any',
-    'category_730_Exterior[]': 'tag_WearCategory0',
   }
 
 def get_lots_params():
@@ -151,7 +163,17 @@ def get_main_list_html(page, count):
 
   except Exception as error:
     print_error(error)
+
     return False
+
+def get_total_count():
+  html = get_main_list_html(0, 1)
+
+  if html:
+    json_object = json.loads(html.text)
+    return json_object['total_count']
+  else:
+    return 0
 
 def get_parsed_skins(page, count, filters):
   html = get_main_list_html(page, count)
@@ -182,7 +204,7 @@ def get_parsed_skins(page, count, filters):
       }
 
       # with open('names.txt', 'a', encoding='utf-8') as file:
-      #   file.write(f'{name}\n')
+      #   file.write(f'{name} : {item["href"]}\n')
       #   file.close()
 
       if (filters and name in filters) or (filters is False):
@@ -336,31 +358,53 @@ def parse_lots(list):
     else:
       print_status_code(html.status_code)
 
-def main():
+def get_skins_list(filters):
+  page = 0
+  skins = []
+  chunk_count = 100
+  total_count = get_total_count()
+
+  try:
+    while page * chunk_count < total_count:
+      current_range = [chunk_count * page + 1, chunk_count * (page + 1)]
+      print_range = f'{current_range[0]}-{current_range[1]}'
+
+      print(f'{Back.YELLOW}{Fore.BLACK} » Skins {print_range} from {total_count} loading…{Back.BLACK}{Fore.YELLOW}█▓▒░')
+      loaded = get_parsed_skins(page, chunk_count, filters)
+
+      if loaded:
+        skins += loaded
+
+      page += 1
+
+      if (page % 5 == 0):
+        time.sleep(TIMEOUT * 10)
+      else:
+        time.sleep(TIMEOUT * 2)
+
+  except Exception as error:
+    print_error(error)
+
+  return skins
+
+def remove_old_lots():
   if os.path.exists(FILE_STEAM):
     os.remove(FILE_STEAM)
 
+def main():
+  remove_old_lots()
   print(f'{Back.GREEN}{Fore.BLACK} » Let´s rock!{Back.BLACK}{Fore.GREEN}█▓▒░')
 
   filters = get_filters()
   while True:
-    print(f'{Back.YELLOW}{Fore.BLACK} » Skins list loading…{Back.BLACK}{Fore.YELLOW}█▓▒░')
+    skins = get_skins_list(filters)
 
-    skins = []
-    skins_count = 100
+    if skins:
+      parse_lots(skins)
+    else:
+      print(f'{Back.RED}{Fore.WHITE} » Fail! Skins list is empty. Restarting…{Back.BLACK}{Fore.RED}█▓▒░')
+      time.sleep(TIMEOUT)
 
-    try:
-      skins += get_parsed_skins(0, skins_count, filters)
-      skins += get_parsed_skins(100, skins_count, filters)
-
-      if skins:
-        parse_lots(skins)
-      else:
-        print(f'{Back.RED}{Fore.WHITE} » Fail! Skins list is empty. Restarting…{Back.BLACK}{Fore.RED}█▓▒░')
-
-      print(f'{Back.YELLOW}{Fore.BLACK} » Work is done. Restarting…{Back.BLACK}{Fore.YELLOW}█▓▒░')
-
-    except Exception as error:
-      print_error(error)
+    print(f'{Back.YELLOW}{Fore.BLACK} » Work is done. Restarting…{Back.BLACK}{Fore.YELLOW}█▓▒░')
 
 main()
