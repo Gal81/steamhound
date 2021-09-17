@@ -26,12 +26,12 @@ URL_LOT = 'steam://rungame/730/76561202255233023/+csgo_econ_action_preview%20'
 
 FILE_FILTER = 'filter.txt'
 
-def get_main_params(page, count):
+def get_main_params(start_from, count):
   # 'norender': 1,
   # 'search_descriptions': 1,
   return {
     'query': '',
-    'start': page,
+    'start': start_from,
     'count': count,
     'appid': 730,
     'sort_dir': 'asc',
@@ -148,9 +148,9 @@ def get_filters():
   else:
     return False
 
-def get_main_list_html(page, count):
+def get_main_list_html(start_from, count):
   url = HOST_STEAM + URL_STEAM
-  params = get_main_params(page, count)
+  params = get_main_params(start_from, count)
 
   try:
     response = requests.get(url, headers=HEADERS, params=params)
@@ -175,8 +175,8 @@ def get_total_count():
   else:
     return 0
 
-def get_parsed_skins(page, count, filters):
-  html = get_main_list_html(page, count)
+def get_parsed_skins(start_from, count, filters):
+  html = get_main_list_html(start_from, count)
 
   if html:
     json_object = json.loads(html.text)
@@ -363,14 +363,18 @@ def get_skins_list(filters):
   skins = []
   chunk_count = 100
   total_count = get_total_count()
+  time.sleep(TIMEOUT * 2)
 
   try:
     while page * chunk_count < total_count:
+      shift = 0 if page == 0 else 1
+      start_from = chunk_count * page + shift
+
       current_range = [chunk_count * page + 1, chunk_count * (page + 1)]
       print_range = f'{current_range[0]}-{current_range[1]}'
 
       print(f'{Back.YELLOW}{Fore.BLACK} » Skins {print_range} from {total_count} loading…{Back.BLACK}{Fore.YELLOW}█▓▒░')
-      loaded = get_parsed_skins(page, chunk_count, filters)
+      loaded = get_parsed_skins(start_from, chunk_count, filters)
 
       if loaded:
         skins += loaded
