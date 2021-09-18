@@ -232,7 +232,7 @@ def get_float(id):
     'url': URL_LOT + id
   }
 
-  try: 
+  try:
     response = requests.get(HOST_CSGO, headers=HEADERS, params=params)
 
     if response.status_code == 200:
